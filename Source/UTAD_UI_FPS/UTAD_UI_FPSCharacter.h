@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "UTAD_UI_FPSCharacter.generated.h"
 
+class UAbilitySystemHUD;
 class UInputComponent;
 class USkeletalMeshComponent;
 class USceneComponent;
@@ -38,6 +39,10 @@ class AUTAD_UI_FPSCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputMappingContext* MenuMappingContext;
+	
+
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* JumpAction;
@@ -46,7 +51,27 @@ class AUTAD_UI_FPSCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* ToggleAblilityHUD;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* AblilityHUD_UP;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* AblilityHUD_RIGHT;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* AblilityHUD_DOWN;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* AblilityHUD_LEFT;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	class UInputAction* AblilityHUD_ENTER;
 	
+
+	
+	bool AbilityHUDToogled =false;
 public:
 	AUTAD_UI_FPSCharacter();
 
@@ -121,12 +146,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
 	TSubclassOf<UPlayerHUD> PlayerHUDWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UI)
+	TSubclassOf<UAbilitySystemHUD> AbilitySystemHUDWidget;
+
+	UPlayerHUD* GetPlayerHudInstance() const {return PlayerHUDInstance;}
+	UAbilitySystemHUD* GetAblilitySystyemHUDInstance() const {return AblilitySystyemHUDInstance;}
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	void ToggleAblityHUD(const FInputActionValue& Value);
+	
+	void AbilitySystemHUD_UP(const FInputActionValue& Value);
+	void AbilitySystemHUD_RIGTH(const FInputActionValue& Value);
+	void AbilitySystemHUD_DOWN(const FInputActionValue& Value);
+	void AbilitySystemHUD_LEFT(const FInputActionValue& Value);
+	void AbilitySystemHUD_ENTER(const FInputActionValue& Value);
 
 protected:
 	// APawn interface
@@ -148,6 +187,10 @@ private:
 	/****************************************************/
 
 	/** Instances that will be created and showed on viewport */
+	UPROPERTY()
 	UPlayerHUD* PlayerHUDInstance;
+	
+	UPROPERTY()
+	UAbilitySystemHUD* AblilitySystyemHUDInstance;
 };
 

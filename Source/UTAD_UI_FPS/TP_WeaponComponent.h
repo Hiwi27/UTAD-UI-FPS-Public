@@ -48,7 +48,7 @@ public:
 
 	/** Number of bullets currently in the weapon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	int CurrentNumBullets = 0;
+	int CurrentNumBullets = 10;
 
 	/** Sets default values for this component's properties */
 	UTP_WeaponComponent();
@@ -97,10 +97,14 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+	virtual void BeginPlay() override;
+
+	virtual void InitializeComponent() override;
 	/** The Character holding this weapon*/
+	UPROPERTY()
 	AUTAD_UI_FPSCharacter* Character;
 
 	float ReloadTimer;
-
 	bool bIsReloading;
+
 };

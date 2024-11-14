@@ -10,14 +10,24 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
-#include "Blueprint/UserWidget.h"
+#include "Camera/CameraComponent.h"
+#include "Components/Image.h"
+#include "UI/Crosshair.h"
+#include "UI/PlayerHUD.h"
+#include "DrawDebugHelpers.h"
+#include "UTAD_UI_FPS_Enemy.h"
+#include "Components/ProgressBar.h"
+#include "UI/AmmoCounter.h"
+#include "UI/ReloadBar.h"
 
 #define RELOAD_TIME 1.f
 
 // Sets default values for this component's properties
 UTP_WeaponComponent::UTP_WeaponComponent()
-	: ReloadTimer(0.f)
-	, bIsReloading(false)
+	: FireSound(nullptr), FireAnimation(nullptr), FireMappingContext(nullptr), FireAction(nullptr),
+	  ReloadAction(nullptr),
+	  Character(nullptr), ReloadTimer(0.f)
+	  , bIsReloading(false)
 {
 	// Default offset from the character location for projectiles to spawn
 	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
@@ -29,8 +39,29 @@ void UTP_WeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	{
 		ReloadTimer += DeltaTime;
 		// To test ReloadTimer
-		// GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("%f"), ReloadTimer));
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("%f"), ReloadTimer));
+		Character->GetPlayerHudInstance()->ReloadBarWidget->UpdateReloadBarValue(ReloadTimer);
 	}
+
+	if(Character!= nullptr)
+	{
+		
+	FHitResult OutHit;
+	GetWorld()->LineTraceSingleByChannel(OutHit,Character->GetFirstPersonCameraComponent()->GetComponentLocation(), (Character->GetFirstPersonCameraComponent()->GetForwardVector()* 2000) + Character->GetFirstPersonCameraComponent()->GetComponentLocation(),ECC_Visibility );
+	DrawDebugLine(GetWorld(),Character->GetFirstPersonCameraComponent()->GetComponentLocation(), (Character->GetFirstPersonCameraComponent()->GetForwardVector()* 2000) + Character->GetFirstPersonCameraComponent()->GetComponentLocation(), FColor::Red);
+		if(Cast<AUTAD_UI_FPS_Enemy>(OutHit.GetActor()))
+		{
+			//Make crosshair red when aiming a enemy
+			Character->GetPlayerHudInstance()->CrosshairWidget->Crosshair->SetColorAndOpacity(FLinearColor::Red);
+		}
+		else
+		{
+		    //Reset crosshair color
+			// Character->GetPlayerHudInstance()->CrosshairWidget->Crosshair->SetBrushTintColor(Character->GetPlayerHudInstance()->CrosshairWidget->OriginalColor);
+			Character->GetPlayerHudInstance()->CrosshairWidget->Crosshair->SetColorAndOpacity(FLinearColor::White);
+		}
+	}
+
 }
 
 void UTP_WeaponComponent::Fire()
@@ -62,6 +93,9 @@ void UTP_WeaponComponent::Fire()
 	
 			// Spawn the projectile at the muzzle
 			World->SpawnActor<AUTAD_UI_FPSProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
+			Character->GetPlayerHudInstance()->CrosshairWidget->FireAnimation = true;
+
 		}
 	}
 	
@@ -83,6 +117,8 @@ void UTP_WeaponComponent::Fire()
 	}
 
 	--CurrentNumBullets;
+	SetCurrentNumBullets(CurrentNumBullets);
+
 }
 
 void UTP_WeaponComponent::StartReload()
@@ -119,6 +155,8 @@ void UTP_WeaponComponent::CompleteReload()
 	CurrentNumBullets = __min(MagazineSize, playerBullets);
 
 	Character->SetTotalBullets(playerBullets - CurrentNumBullets);
+	SetCurrentNumBullets(CurrentNumBullets);
+	Character->GetPlayerHudInstance()->ReloadBarWidget->UpdateReloadBarValue(0.0f);
 }
 
 void UTP_WeaponComponent::CancelReload()
@@ -129,6 +167,8 @@ void UTP_WeaponComponent::CancelReload()
 	}
 
 	bIsReloading = false;
+
+	Character->GetPlayerHudInstance()->ReloadBarWidget->UpdateReloadBarValue(0.0f);
 }
 
 int UTP_WeaponComponent::GetMagazineSize()
@@ -149,6 +189,7 @@ int UTP_WeaponComponent::GetCurrentNumBullets()
 void UTP_WeaponComponent::SetCurrentNumBullets(int NewCurrentNumBullets)
 {
 	CurrentNumBullets = NewCurrentNumBullets;
+	Character->GetPlayerHudInstance()->AmmoCounterWidget->UpdateCurrentAmmo(CurrentNumBullets);
 }
 
 void UTP_WeaponComponent::AttachWeapon(AUTAD_UI_FPSCharacter* TargetCharacter)
@@ -167,6 +208,7 @@ void UTP_WeaponComponent::AttachWeapon(AUTAD_UI_FPSCharacter* TargetCharacter)
 	
 	// switch bHasRifle so the animation blueprint can switch to another animation set
 	Character->SetHasRifle(true);
+	Character->GetPlayerHudInstance()->ReloadBarWidget->UpdateReloadBarValue(ReloadTimer);
 
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
@@ -192,6 +234,7 @@ void UTP_WeaponComponent::AttachWeapon(AUTAD_UI_FPSCharacter* TargetCharacter)
 			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Canceled, this, &UTP_WeaponComponent::CancelReload);
 		}
 	}
+	SetCurrentNumBullets(CurrentNumBullets);
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -208,4 +251,16 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			Subsystem->RemoveMappingContext(FireMappingContext);
 		}
 	}
+}
+
+void UTP_WeaponComponent::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void UTP_WeaponComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+
 }

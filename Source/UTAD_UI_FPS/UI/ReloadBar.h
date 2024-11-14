@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "ReloadBar.generated.h"
-
+class UProgressBar;
 /**
  * 
  */
@@ -16,13 +16,14 @@ class UTAD_UI_FPS_API UReloadBar : public UUserWidget
 
 public:
 
+	UPROPERTY(BlueprintReadWrite, meta=(BindWidget))
+	UProgressBar* ReloadBar;
+	
 	UFUNCTION(BlueprintCallable, Category = Visibility)
 	void Show();
 
 	UFUNCTION(BlueprintCallable, Category = Visibility)
 	void Hide();
-
-private:
 
 	void UpdateReloadBarValue(float NewValue);
 };

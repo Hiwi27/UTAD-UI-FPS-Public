@@ -18,10 +18,15 @@ void UAmmoCounter::Hide()
 
 void UAmmoCounter::UpdateCurrentAmmo(int NewCurrentAmmo)
 {
-
+	CurrentAmmo->SetText(FText::FromString(FString::FromInt(NewCurrentAmmo)));
 }
 
 void UAmmoCounter::UpdateTotalAmmo(int NewTotalAmmo)
 {
+	TotalAmmo->SetText(FText::FromString(FString::FromInt(NewTotalAmmo)));
+}
 
+bool UAmmoCounter::Initialize()
+{
+	return Super::Initialize();
 }

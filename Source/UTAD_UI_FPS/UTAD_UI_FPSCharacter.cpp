@@ -9,8 +9,15 @@
 #include "EnhancedInputSubsystems.h"
 
 // UI
+#include "TP_WeaponComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/ProgressBar.h"
+#include "UI/AbilitySystemHUD.h"
+#include "UI/AmmoCounter.h"
+#include "UI/PlayerHealthBar.h"
 #include "UI/PlayerHUD.h"
+#include "UI/ReloadBar.h"
+#include "UI/SplashScreen.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AUTAD_UI_FPSCharacter
@@ -60,12 +67,41 @@ void AUTAD_UI_FPSCharacter::BeginPlay()
 		PlayerHUDInstance = CreateWidget<UPlayerHUD>(GetWorld(), PlayerHUDWidget);
 		PlayerHUDInstance->AddToViewport();
 		PlayerHUDInstance->ShowNoWeapon();
+		PlayerHUDInstance->PlayerHealthBarWidget->PlayerHealthBar->SetPercent(Health/100.0f);
+		UTP_WeaponComponent* prueba = Cast<UTP_WeaponComponent>( GetComponentByClass(UTP_WeaponComponent::StaticClass()));
+		if(prueba)
+		{
+			PlayerHUDInstance->AmmoCounterWidget->UpdateCurrentAmmo(prueba->CurrentNumBullets);
+		}
+		PlayerHUDInstance->AmmoCounterWidget->UpdateTotalAmmo(TotalBullets);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Player HUD Widget not assigned to UTAD_UI_FPSCharacter"));
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Player HUD Widget not assigned to UTAD_UI_FPSCharacter"));
 	}
+
+	if (AbilitySystemHUDWidget)
+	{
+		AblilitySystyemHUDInstance = CreateWidget<UAbilitySystemHUD>(GetWorld(), AbilitySystemHUDWidget);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AbilitySystem HUD Widget not assigned to UTAD_UI_FPSCharacter"));
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("AbilitySystem HUD Widget not assigned to UTAD_UI_FPSCharacter"));
+	}
+
+	if(GetHasRifle())
+	{
+		PlayerHUDInstance->ShowAll();
+	}
+	else
+	{
+		PlayerHUDInstance->Hide();
+	}
+
+	GetPlayerHudInstance()->SplashScreenWidget->Show();
+	
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -84,6 +120,17 @@ void AUTAD_UI_FPSCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AUTAD_UI_FPSCharacter::Look);
+
+		//AbilitySystemMenu
+		EnhancedInputComponent->BindAction(ToggleAblilityHUD, ETriggerEvent::Completed, this, &AUTAD_UI_FPSCharacter::ToggleAblityHUD);
+
+		//AbilitySystemMenu Navigation
+		EnhancedInputComponent->BindAction(AblilityHUD_UP, ETriggerEvent::Completed, this, &AUTAD_UI_FPSCharacter::AbilitySystemHUD_UP);
+		EnhancedInputComponent->BindAction(AblilityHUD_RIGHT, ETriggerEvent::Completed, this, &AUTAD_UI_FPSCharacter::AbilitySystemHUD_RIGTH);
+		EnhancedInputComponent->BindAction(AblilityHUD_DOWN, ETriggerEvent::Completed, this, &AUTAD_UI_FPSCharacter::AbilitySystemHUD_DOWN);
+		EnhancedInputComponent->BindAction(AblilityHUD_LEFT, ETriggerEvent::Completed, this, &AUTAD_UI_FPSCharacter::AbilitySystemHUD_LEFT);
+		EnhancedInputComponent->BindAction(AblilityHUD_ENTER, ETriggerEvent::Completed, this, &AUTAD_UI_FPSCharacter::AbilitySystemHUD_ENTER);
+
 	}
 }
 
@@ -114,12 +161,77 @@ void AUTAD_UI_FPSCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void AUTAD_UI_FPSCharacter::ToggleAblityHUD(const FInputActionValue& Value)
+{
+	if(AbilityHUDToogled == false)
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+			{
+				Subsystem->RemoveMappingContext(DefaultMappingContext);           // Remove the current mapping context
+				Subsystem->AddMappingContext(MenuMappingContext, 1);
+
+				// PlayerHUDInstance->RemoveFromParent();
+				AblilitySystyemHUDInstance->AddToViewport();
+				AbilityHUDToogled = true;
+			}
+		}
+	}
+	else
+	{
+		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+			{
+				Subsystem->RemoveMappingContext(MenuMappingContext);           // Remove the current mapping context
+				Subsystem->AddMappingContext(DefaultMappingContext, 1);
+				
+				AblilitySystyemHUDInstance->RemoveFromParent();
+				// PlayerHUDInstance->AddToViewport();
+				AbilityHUDToogled = false;
+			}
+		}
+	}
+	
+}
+
+void AUTAD_UI_FPSCharacter::AbilitySystemHUD_UP(const FInputActionValue& Value)
+{
+	AblilitySystyemHUDInstance->Up();
+}
+
+void AUTAD_UI_FPSCharacter::AbilitySystemHUD_RIGTH(const FInputActionValue& Value)
+{
+	AblilitySystyemHUDInstance->Right();
+
+}
+
+void AUTAD_UI_FPSCharacter::AbilitySystemHUD_DOWN(const FInputActionValue& Value)
+{
+	AblilitySystyemHUDInstance->Down();
+
+}
+
+void AUTAD_UI_FPSCharacter::AbilitySystemHUD_LEFT(const FInputActionValue& Value)
+{
+	AblilitySystyemHUDInstance->Left();
+
+}
+
+void AUTAD_UI_FPSCharacter::AbilitySystemHUD_ENTER(const FInputActionValue& Value)
+{
+	AblilitySystyemHUDInstance->Enter();
+
+}
+
 void AUTAD_UI_FPSCharacter::SetHealth(int NewHealth)
 {
 	int ClampedNewHealth = FMath::Clamp(NewHealth, 0, MaxHealth);
 	if (ClampedNewHealth != Health)
 	{
 		Health = ClampedNewHealth;
+		PlayerHUDInstance->PlayerHealthBarWidget->PlayerHealthBar->SetPercent(Health/100.0f);
 	}
 }
 
@@ -131,6 +243,7 @@ int AUTAD_UI_FPSCharacter::GetHealth()
 void AUTAD_UI_FPSCharacter::SetMaxHealth(int NewMaxHealth)
 {
 	MaxHealth = FMath::Max(0, NewMaxHealth);
+
 }
 
 int AUTAD_UI_FPSCharacter::GetMaxHealth()
@@ -142,6 +255,7 @@ void AUTAD_UI_FPSCharacter::SetHasRifle(bool bNewHasRifle)
 {
 	bHasRifle = bNewHasRifle;
 	PlayerHUDInstance->ShowAll();
+	
 }
 
 bool AUTAD_UI_FPSCharacter::GetHasRifle()
@@ -152,6 +266,7 @@ bool AUTAD_UI_FPSCharacter::GetHasRifle()
 void AUTAD_UI_FPSCharacter::SetTotalBullets(int NewTotalBullets)
 {
 	TotalBullets = NewTotalBullets;
+	GetPlayerHudInstance()->AmmoCounterWidget->UpdateTotalAmmo(NewTotalBullets);
 }
 
 int AUTAD_UI_FPSCharacter::GetTotalBullets()

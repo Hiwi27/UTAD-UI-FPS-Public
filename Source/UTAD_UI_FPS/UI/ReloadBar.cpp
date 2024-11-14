@@ -18,5 +18,5 @@ void UReloadBar::Hide()
 
 void UReloadBar::UpdateReloadBarValue(float NewValue)
 {
-
+	ReloadBar->SetPercent(NewValue);
 }

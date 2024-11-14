@@ -6,6 +6,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "UTAD_UI_FPS_Enemy.generated.h"
 
+class UEnemyHealthBar;
 class UWidgetComponent;
 
 /**
@@ -15,9 +16,17 @@ UCLASS()
 class UTAD_UI_FPS_API AUTAD_UI_FPS_Enemy : public AStaticMeshActor
 {
 	GENERATED_BODY()
-	
 public:
 
+	UPROPERTY()
+	UEnemyHealthBar* EnemyHealthBarComponent;
+
+	UPROPERTY(EditAnywhere)
+	UWidgetComponent* WidgetComponent;
+
+
+	AUTAD_UI_FPS_Enemy();
+	
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Current Health */
@@ -47,5 +56,6 @@ public:
 protected:
 
 	virtual void BeginPlay() override;
+
 
 };
